@@ -1,0 +1,132 @@
+<h2>Categorías</h2>
+
+<form id="categoriaForm">
+    <input type="hidden" id="idCategoria">
+
+    <div class="mb-3">
+        <label for="nombreCategoria" class="form-label">Nombre Categoría</label>
+        <input type="text" id="nombreCategoria" class="form-control" required maxlength="100">
+    </div>
+
+    <div class="mb-3">
+        <label for="descripcion" class="form-label">Descripción</label>
+        <textarea id="descripcion" class="form-control" maxlength="65535"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+
+<hr>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre Categoría</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="categoriasTableBody"></tbody>
+</table>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    cargarCategorias();
+
+    document.getElementById('categoriaForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const id = document.getElementById('idCategoria').value;
+        id ? actualizarCategoria(id) : crearCategoria();
+    });
+});
+
+function cargarCategorias() {
+    fetch('categorias')
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('categoriasTableBody');
+            tbody.innerHTML = '';
+            data.forEach(cat => {
+                const row = `
+                    <tr>
+                        <td>${cat.idCategoria}</td>
+                        <td>${cat.nombreCategoria}</td>
+                        <td>${cat.descripcion || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick='editarCategoria(${JSON.stringify(cat)})'>Editar</button>
+                            <button class="btn btn-sm btn-danger" onclick="eliminarCategoria(${cat.idCategoria})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        });
+}
+
+function obtenerDatosCategoria() {
+    return {
+        nombreCategoria: document.getElementById('nombreCategoria').value.trim(),
+        descripcion: document.getElementById('descripcion').value.trim()
+    };
+}
+
+function crearCategoria() {
+    const categoria = obtenerDatosCategoria();
+    fetch('categorias', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(categoria)
+    }).then(res => {
+        if (res.ok) {
+            resetForm();
+            cargarCategorias();
+        } else {
+            alert('Error al crear categoría');
+        }
+    });
+}
+
+function actualizarCategoria(id) {
+    const categoria = obtenerDatosCategoria();
+    categoria.idCategoria = parseInt(id);
+    fetch('categorias', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(categoria)
+    }).then(res => {
+        if (res.ok) {
+            resetForm();
+            cargarCategorias();
+        } else {
+            alert('Error al actualizar categoría');
+        }
+    });
+}
+
+function eliminarCategoria(id) {
+    if (!confirm('¿Estás seguro de eliminar esta categoría?')) return;
+    fetch('categorias', {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ idCategoria: id })
+    }).then(res => {
+        if (res.ok) {
+            cargarCategorias();
+        } else {
+            alert('Error al eliminar categoría');
+        }
+    });
+}
+
+function editarCategoria(cat) {
+    document.getElementById('idCategoria').value = cat.idCategoria;
+    document.getElementById('nombreCategoria').value = cat.nombreCategoria;
+    document.getElementById('descripcion').value = cat.descripcion || '';
+}
+
+function resetForm() {
+    document.getElementById('categoriaForm').reset();
+    document.getElementById('idCategoria').value = '';
+}
+</script>

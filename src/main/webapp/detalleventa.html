@@ -1,0 +1,143 @@
+<h2>Detalle Venta</h2>
+
+<form id="detalleForm">
+    <input type="hidden" id="idDetalle">
+
+    <div class="mb-3">
+        <label for="cantidad" class="form-label">Cantidad</label>
+        <input type="number" class="form-control" id="cantidad" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="precioUnitario" class="form-label">Precio Unitario</label>
+        <input type="text" class="form-control" id="precioUnitario" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="idLibro" class="form-label">ID Libro</label>
+        <input type="number" class="form-control" id="idLibro" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="idVenta" class="form-label">ID Venta</label>
+        <input type="number" class="form-control" id="idVenta" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</form>
+
+<hr>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>ID Libro</th>
+            <th>ID Venta</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody id="detalleTableBody"></tbody>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarDetalleVentas();
+
+            document.getElementById('detalleForm').addEventListener('submit', e => {
+                e.preventDefault();
+                const id = document.getElementById('idDetalle').value;
+                id ? actualizarDetalle(id) : crearDetalle();
+            });
+        });
+
+        function cargarDetalleVentas() {
+            fetch('detalleventa')
+                    .then(res => res.json())
+                    .then(data => {
+                        const tbody = document.getElementById('detalleTableBody');
+                        tbody.innerHTML = '';
+                        data.forEach(d => {
+                            const row = `
+                        <tr>
+                            <td>${d.idDetalle}</td>
+                            <td>${d.cantidad}</td>
+                            <td>${d.precioUnitario}</td>
+                            <td>${d.idLibro}</td>
+                            <td>${d.idVenta}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" onclick='editarDetalle(${JSON.stringify(d)})'>Editar</button>
+                                <button class="btn btn-sm btn-danger" onclick="eliminarDetalle(${d.idDetalle})">Eliminar</button>
+                            </td>
+                        </tr>
+                    `;
+                            tbody.innerHTML += row;
+                        });
+                    });
+        }
+
+        function obtenerDatosDetalle() {
+            return {
+                cantidad: parseInt(document.getElementById('cantidad').value),
+                precioUnitario: document.getElementById('precioUnitario').value,
+                idLibro: parseInt(document.getElementById('idLibro').value),
+                idVenta: parseInt(document.getElementById('idVenta').value)
+            };
+        }
+
+        function crearDetalle() {
+            const detalle = obtenerDatosDetalle();
+            fetch('detalleventa', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(detalle)
+            }).then(res => {
+                if (res.ok) {
+                    resetDetalleForm();
+                    cargarDetalleVentas();
+                }
+            });
+        }
+
+        function actualizarDetalle(id) {
+            const detalle = obtenerDatosDetalle();
+            detalle.idDetalle = parseInt(id);
+            fetch('detalleventa', {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(detalle)
+            }).then(res => {
+                if (res.ok) {
+                    resetDetalleForm();
+                    cargarDetalleVentas();
+                }
+            });
+        }
+
+        function eliminarDetalle(idDetalle) {
+            fetch('detalleventa', {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({idDetalle})
+            }).then(res => {
+                if (res.ok) {
+                    cargarDetalleVentas();
+                }
+            });
+        }
+
+        function editarDetalle(detalle) {
+            document.getElementById('idDetalle').value = detalle.idDetalle;
+            document.getElementById('cantidad').value = detalle.cantidad;
+            document.getElementById('precioUnitario').value = detalle.precioUnitario;
+            document.getElementById('idLibro').value = detalle.idLibro;
+            document.getElementById('idVenta').value = detalle.idVenta;
+        }
+
+        function resetDetalleForm() {
+            document.getElementById('detalleForm').reset();
+            document.getElementById('idDetalle').value = '';
+        }
+    </script>
+
+</table>
