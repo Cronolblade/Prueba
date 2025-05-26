@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Libros</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container py-4">
+    <h1 class="mb-4">Gestión de Libros</h1>
+
+    <form id="libroForm" class="mb-4">
+        <input type="hidden" id="idLibro">
+        <div class="mb-3">
+            <label for="titulo" class="form-label">Título</label>
+            <input type="text" class="form-control" id="titulo" required>
+        </div>
+        <div class="mb-3">
+            <label for="isbn" class="form-label">ISBN</label>
+            <input type="text" class="form-control" id="isbn">
+        </div>
+        <div class="mb-3">
+            <label for="anioPublicacion" class="form-label">Año Publicación</label>
+            <input type="date" class="form-control" id="anioPublicacion">
+        </div>
+        <div class="mb-3">
+            <label for="precio" class="form-label">Precio</label>
+            <input type="number" step="0.01" class="form-control" id="precio" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="reset" class="btn btn-secondary">Cancelar</button>
+    </form>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th><th>Título</th><th>ISBN</th><th>Año</th><th>Precio</th><th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="librosTableBody"></tbody>
+    </table>
+
+    <script>
+        const url = 'LibrosServlet';
+
+document.getElementById('libroForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const id = document.getElementById('idLibro').value;
+    if (id) updateLibro();
+    else createLibro();
+});
+
+function getLibros() {
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.getElementById('librosTableBody');
+            tbody.innerHTML = '';
+            data.forEach(l => {
+                tbody.innerHTML += `
+                <tr>
+                    <td>${l.idLibro}</td>
+                    <td>${l.titulo}</td>
+                    <td>${l.isbn}</td>
+                    <td>${l.anioPublicacion}</td>
+                    <td>${l.precio}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" onclick="fillForm(${l.idLibro},'${l.titulo}','${l.isbn}','${l.anioPublicacion}','${l.precio}')">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteLibro(${l.idLibro})">Eliminar</button>
+                    </td>
+                </tr>`;
+            });
+        });
+}
+
+function createLibro() {
+    const libro = formToJSON();
+    fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json;charset=UTF-8'},
+        body: JSON.stringify(libro)
+    })
+    .then(res => res.json())
+    .then(() => {
+        getLibros();
+        document.getElementById('libroForm').reset();
+    });
+}
+
+function updateLibro() {
+    const libro = formToJSON();
+    libro.idLibro = parseInt(document.getElementById('idLibro').value);
+    fetch(url, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json;charset=UTF-8'},
+        body: JSON.stringify(libro)
+    })
+    .then(res => res.json())
+    .then(() => {
+        getLibros();
+        document.getElementById('libroForm').reset();
+    });
+}
+
+function deleteLibro(id) {
+    fetch(url, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json;charset=UTF-8'},
+        body: JSON.stringify({idLibro: id})
+    })
+    .then(res => res.json())
+    .then(() => getLibros());
+}
+
+function fillForm(id, titulo, isbn, anio, precio) {
+    document.getElementById('idLibro').value = id;
+    document.getElementById('titulo').value = titulo;
+    document.getElementById('isbn').value = isbn;
+    document.getElementById('anioPublicacion').value = anio;
+    document.getElementById('precio').value = precio;
+}
+
+function formToJSON() {
+    return {
+        titulo: document.getElementById('titulo').value,
+        isbn: document.getElementById('isbn').value,
+        anioPublicacion: document.getElementById('anioPublicacion').value,
+        precio: document.getElementById('precio').value
+    };
+}
+
+getLibros();
+
+    </script>
+</body>
+</html>
+

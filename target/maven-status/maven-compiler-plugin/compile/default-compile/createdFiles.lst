@@ -1,6 +1,7 @@
 dao\AutoresJpaController.class
 servlet\ClientesServlet.class
 dto\Categorias.class
+servlet\LibrosServlet.class
 dto\DetalleVenta_.class
 dao\exceptions\NonexistentEntityException.class
 dto\Autores.class
