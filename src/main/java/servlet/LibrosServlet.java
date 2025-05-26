@@ -10,6 +10,7 @@ import dto.Libros;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import javax.json.*;
@@ -36,14 +37,23 @@ public class LibrosServlet extends HttpServlet {
 
         List<Libros> libros = dao.findLibrosEntities();
         for (Libros l : libros) {
-            jsonArray.add(Json.createObjectBuilder()
-                    .add("idLibro", l.getIdLibro())
-                    .add("titulo", l.getTitulo())
-                    .add("isbn", l.getIsbn() == null ? "" : l.getIsbn())
-                    .add("anioPublicacion", l.getAnioPublicacion() == null ? "" : l.getAnioPublicacion().toString())
-                    .add("precio", l.getPrecio().toString())
-            );
-        }
+    JsonObjectBuilder job = Json.createObjectBuilder()
+        .add("idLibro", l.getIdLibro())
+        .add("titulo", l.getTitulo())
+        .add("isbn", l.getIsbn() == null ? "" : l.getIsbn())
+        .add("precio", l.getPrecio().toString());
+
+    if (l.getAnioPublicacion() != null) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+        String year = sdf.format(l.getAnioPublicacion());
+        job.add("anioPublicacion", year);
+    } else {
+        job.add("anioPublicacion", "");
+    }
+
+    jsonArray.add(job);
+}
+
         response.getWriter().print(jsonArray.build().toString());
     }
 
