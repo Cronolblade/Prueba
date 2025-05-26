@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Libros</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-5">
+    <h1 class="mb-4">Gestión de Libros</h1>
+
+    <form id="libroForm" class="row g-3">
+        <input type="hidden" id="idLibro">
+        <div class="col-md-6">
+            <label class="form-label">Título</label>
+            <input type="text" id="titulo" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">ISBN</label>
+            <input type="text" id="isbn" class="form-control">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Año de Publicación</label>
+            <input type="date" id="anioPublicacion" class="form-control">
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Precio</label>
+            <input type="number" id="precio" class="form-control" step="0.01" required>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary" id="submitBtn">Guardar</button>
+        </div>
+    </form>
+
+    <hr>
+
+    <table class="table table-striped mt-4">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>ISBN</th>
+                <th>Año</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="librosTable"></tbody>
+    </table>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            listarLibros();
+
+            document.getElementById("libroForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+                const id = document.getElementById("idLibro").value;
+                if (id) {
+                    actualizarLibro(id);
+                } else {
+                    crearLibro();
+                }
+            });
+        });
+
+        function listarLibros() {
+            fetch("libros")
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById("librosTable");
+                    tbody.innerHTML = "";
+                    data.forEach(libro => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${libro.idLibro}</td>
+                            <td>${libro.titulo}</td>
+                            <td>${libro.isbn}</td>
+                            <td>${libro.anioPublicacion}</td>
+                            <td>${libro.precio}</td>
+                            <td>
+                              <button class="btn btn-sm btn-warning me-2" onclick='editarLibro(${JSON.stringify(libro)})'>Editar</button>
+                              <button class="btn btn-sm btn-danger" onclick="eliminarLibro(${libro.idLibro})">Eliminar</button>
+                            </td>`;
+                        tbody.appendChild(row);
+                    });
+                });
+        }
+
+        function crearLibro() {
+            const libro = obtenerDatosFormulario();
+            fetch("libros", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(libro)
+            }).then(() => {
+                limpiarFormulario();
+                listarLibros();
+            });
+        }
+
+        function actualizarLibro(id) {
+            const libro = obtenerDatosFormulario();
+            libro.idLibro = parseInt(id);
+            fetch("libros", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(libro)
+            }).then(() => {
+                limpiarFormulario();
+                listarLibros();
+            });
+        }
+
+        function eliminarLibro(id) {
+            if (!confirm("¿Seguro que deseas eliminar este libro?")) return;
+            fetch("libros", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idLibro: id })
+            }).then(() => listarLibros());
+        }
+
+        function editarLibro(libro) {
+            document.getElementById("idLibro").value = libro.idLibro;
+            document.getElementById("titulo").value = libro.titulo;
+            document.getElementById("isbn").value = libro.isbn;
+
+            const fecha = libro.anioPublicacion;
+            document.getElementById("anioPublicacion").value = fecha && fecha.trim() !== "" ? fecha : "";
+
+            document.getElementById("precio").value = libro.precio;
+        }
+
+        function obtenerDatosFormulario() {
+            return {
+                titulo: document.getElementById("titulo").value.trim(),
+                isbn: document.getElementById("isbn").value.trim(),
+                anioPublicacion: document.getElementById("anioPublicacion").value.trim(),
+                precio: document.getElementById("precio").value.trim()
+            };
+        }
+
+        function limpiarFormulario() {
+            document.getElementById("libroForm").reset();
+            document.getElementById("idLibro").value = "";
+        }
+    </script>
+</body>
+</html>
