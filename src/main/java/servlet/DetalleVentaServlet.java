@@ -17,6 +17,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonWriter;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -34,10 +35,9 @@ public class DetalleVentaServlet extends HttpServlet {
     
     @Override
     public void init() throws ServletException {
-        EntityManagerFactory emf = (EntityManagerFactory) getServletContext().getAttribute("emf");
-        detalleDao = new DetalleVentaJpaController(emf);
+        detalleDao = new DetalleVentaJpaController(Persistence.createEntityManagerFactory("com.mycompany_Prueba_war_1.0-SNAPSHOTPU"));
     }
-
+    
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

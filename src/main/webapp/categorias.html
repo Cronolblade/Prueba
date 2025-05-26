@@ -1,132 +1,171 @@
-<h2>Categorías</h2>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gestión de Categorías</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="mb-4">Categorías</h1>
 
-<form id="categoriaForm">
-    <input type="hidden" id="idCategoria">
+    <form id="formCategoria" class="mb-4">
+        <input type="hidden" id="idCategoria" />
+        <div class="mb-3">
+            <label for="nombreCategoria" class="form-label">Nombre de la Categoría</label>
+            <input type="text" class="form-control" id="nombreCategoria" required />
+        </div>
+        <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción</label>
+            <textarea class="form-control" id="descripcion" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnSubmit">Agregar</button>
+        <button type="button" class="btn btn-secondary" id="btnCancel" style="display:none;">Cancelar</button>
+    </form>
 
-    <div class="mb-3">
-        <label for="nombreCategoria" class="form-label">Nombre Categoría</label>
-        <input type="text" id="nombreCategoria" class="form-control" required maxlength="100">
-    </div>
-
-    <div class="mb-3">
-        <label for="descripcion" class="form-label">Descripción</label>
-        <textarea id="descripcion" class="form-control" maxlength="65535"></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Guardar</button>
-</form>
-
-<hr>
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nombre Categoría</th>
-            <th>Descripción</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody id="categoriasTableBody"></tbody>
-</table>
+    <table class="table table-striped" id="tablaCategorias">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
 
 <script>
+const urlServlet = 'categorias';
+
 document.addEventListener('DOMContentLoaded', () => {
     cargarCategorias();
 
-    document.getElementById('categoriaForm').addEventListener('submit', e => {
+    const form = document.getElementById('formCategoria');
+    form.addEventListener('submit', e => {
         e.preventDefault();
         const id = document.getElementById('idCategoria').value;
-        id ? actualizarCategoria(id) : crearCategoria();
+        if (id) {
+            actualizarCategoria();
+        } else {
+            agregarCategoria();
+        }
     });
+
+    document.getElementById('btnCancel').addEventListener('click', limpiarFormulario);
 });
 
 function cargarCategorias() {
-    fetch('categorias')
-        .then(res => res.json())
-        .then(data => {
-            const tbody = document.getElementById('categoriasTableBody');
-            tbody.innerHTML = '';
-            data.forEach(cat => {
-                const row = `
-                    <tr>
-                        <td>${cat.idCategoria}</td>
-                        <td>${cat.nombreCategoria}</td>
-                        <td>${cat.descripcion || ''}</td>
-                        <td>
-                            <button class="btn btn-sm btn-warning" onclick='editarCategoria(${JSON.stringify(cat)})'>Editar</button>
-                            <button class="btn btn-sm btn-danger" onclick="eliminarCategoria(${cat.idCategoria})">Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
+    fetch(urlServlet)
+    .then(resp => {
+        if (!resp.ok) throw new Error('Error al cargar categorías');
+        return resp.json();
+    })
+    .then(data => {
+        const tbody = document.querySelector('#tablaCategorias tbody');
+        tbody.innerHTML = '';
+        data.forEach(cat => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${cat.idCategoria}</td>
+                <td>${escaparHTML(cat.nombreCategoria)}</td>
+                <td>${escaparHTML(cat.descripcion)}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning me-2" onclick="editarCategoria(${cat.idCategoria}, '${escaparJS(cat.nombreCategoria)}', '${escaparJS(cat.descripcion)}')">Editar</button>
+                    <button class="btn btn-sm btn-danger" onclick="eliminarCategoria(${cat.idCategoria})">Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
         });
+    })
+    .catch(error => alert(error.message));
 }
 
-function obtenerDatosCategoria() {
-    return {
-        nombreCategoria: document.getElementById('nombreCategoria').value.trim(),
-        descripcion: document.getElementById('descripcion').value.trim()
-    };
-}
+function agregarCategoria() {
+    const nombre = document.getElementById('nombreCategoria').value.trim();
+    const descripcion = document.getElementById('descripcion').value.trim();
 
-function crearCategoria() {
-    const categoria = obtenerDatosCategoria();
-    fetch('categorias', {
+    fetch(urlServlet, {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(categoria)
-    }).then(res => {
-        if (res.ok) {
-            resetForm();
-            cargarCategorias();
-        } else {
-            alert('Error al crear categoría');
-        }
-    });
+        headers: {'Content-Type': 'application/json;charset=UTF-8'},
+        body: JSON.stringify({nombreCategoria: nombre, descripcion: descripcion})
+    })
+    .then(resp => {
+        if (!resp.ok) return resp.json().then(err => {throw new Error(err.error || 'Error al agregar categoría');});
+        return resp.json();
+    })
+    .then(data => {
+        limpiarFormulario();
+        cargarCategorias();
+    })
+    .catch(error => alert(error.message));
 }
 
-function actualizarCategoria(id) {
-    const categoria = obtenerDatosCategoria();
-    categoria.idCategoria = parseInt(id);
-    fetch('categorias', {
+function editarCategoria(id, nombre, descripcion) {
+    document.getElementById('idCategoria').value = id;
+    document.getElementById('nombreCategoria').value = nombre;
+    document.getElementById('descripcion').value = descripcion;
+
+    document.getElementById('btnSubmit').textContent = 'Actualizar';
+    document.getElementById('btnCancel').style.display = 'inline-block';
+}
+
+function actualizarCategoria() {
+    const id = parseInt(document.getElementById('idCategoria').value);
+    const nombre = document.getElementById('nombreCategoria').value.trim();
+    const descripcion = document.getElementById('descripcion').value.trim();
+
+    fetch(urlServlet, {
         method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(categoria)
-    }).then(res => {
-        if (res.ok) {
-            resetForm();
-            cargarCategorias();
-        } else {
-            alert('Error al actualizar categoría');
-        }
-    });
+        headers: {'Content-Type': 'application/json;charset=UTF-8'},
+        body: JSON.stringify({idCategoria: id, nombreCategoria: nombre, descripcion: descripcion})
+    })
+    .then(resp => {
+        if (!resp.ok) return resp.json().then(err => {throw new Error(err.error || 'Error al actualizar categoría');});
+        return resp.json();
+    })
+    .then(data => {
+        limpiarFormulario();
+        cargarCategorias();
+    })
+    .catch(error => alert(error.message));
 }
 
 function eliminarCategoria(id) {
-    if (!confirm('¿Estás seguro de eliminar esta categoría?')) return;
-    fetch('categorias', {
-        method: 'DELETE',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ idCategoria: id })
-    }).then(res => {
-        if (res.ok) {
-            cargarCategorias();
-        } else {
-            alert('Error al eliminar categoría');
-        }
+    if (!confirm('¿Está seguro de eliminar esta categoría?')) return;
+
+    fetch(urlServlet + '?id=' + id, {
+        method: 'DELETE'
+    })
+    .then(resp => {
+        if (!resp.ok) return resp.json().then(err => {throw new Error(err.error || 'Error al eliminar categoría');});
+        cargarCategorias();
+    })
+    .catch(error => alert(error.message));
+}
+
+function limpiarFormulario() {
+    document.getElementById('formCategoria').reset();
+    document.getElementById('idCategoria').value = '';
+    document.getElementById('btnSubmit').textContent = 'Agregar';
+    document.getElementById('btnCancel').style.display = 'none';
+}
+
+function escaparHTML(text) {
+    if (!text) return '';
+    return text.replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
     });
 }
 
-function editarCategoria(cat) {
-    document.getElementById('idCategoria').value = cat.idCategoria;
-    document.getElementById('nombreCategoria').value = cat.nombreCategoria;
-    document.getElementById('descripcion').value = cat.descripcion || '';
-}
-
-function resetForm() {
-    document.getElementById('categoriaForm').reset();
-    document.getElementById('idCategoria').value = '';
+// Escapa para JS en atributos onClick (comillas simples y barras)
+function escaparJS(text) {
+    if (!text) return '';
+    return text.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 </script>
+
+</body>
+</html>
