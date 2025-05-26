@@ -23,13 +23,16 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
  *
- * @author NITRO
+ * @author FERNANDO
  */
 @Entity
 @Table(name = "ventas")
+@XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "Ventas.findAll", query = "SELECT v FROM Ventas v"),
     @NamedQuery(name = "Ventas.findByIdVenta", query = "SELECT v FROM Ventas v WHERE v.idVenta = :idVenta"),
@@ -93,6 +96,7 @@ public class Ventas implements Serializable {
         this.total = total;
     }
 
+    @XmlTransient
     public Collection<DetalleVenta> getDetalleVentaCollection() {
         return detalleVentaCollection;
     }

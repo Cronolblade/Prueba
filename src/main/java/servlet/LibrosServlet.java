@@ -1,27 +1,22 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package servlet;
 
 import dao.LibrosJpaController;
-import dao.exceptions.NonexistentEntityException;
 import dto.Libros;
-import java.io.IOException;
-import java.io.StringReader;
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+
 import javax.json.*;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
+import java.io.*;
+import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.List;
 
-@WebServlet("/LibrosServlet")
+@WebServlet("/libros")
 public class LibrosServlet extends HttpServlet {
+
     private LibrosJpaController dao;
 
     @Override
@@ -31,92 +26,107 @@ public class LibrosServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        response.setContentType("application/json;charset=UTF-8");
-        JsonArrayBuilder jsonArray = Json.createArrayBuilder();
-
-        List<Libros> libros = dao.findLibrosEntities();
-        for (Libros l : libros) {
-    JsonObjectBuilder job = Json.createObjectBuilder()
-        .add("idLibro", l.getIdLibro())
-        .add("titulo", l.getTitulo())
-        .add("isbn", l.getIsbn() == null ? "" : l.getIsbn())
-        .add("precio", l.getPrecio().toString());
-
-    if (l.getAnioPublicacion() != null) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
-        String year = sdf.format(l.getAnioPublicacion());
-        job.add("anioPublicacion", year);
-    } else {
-        job.add("anioPublicacion", "");
-    }
-
-    jsonArray.add(job);
-}
-
-        response.getWriter().print(jsonArray.build().toString());
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        request.setCharacterEncoding("UTF-8");
-        JsonObject json = Json.createReader(request.getReader()).readObject();
-
-        Libros libro = new Libros();
-        libro.setTitulo(json.getString("titulo"));
-        libro.setIsbn(json.getString("isbn", ""));
-        libro.setAnioPublicacion(json.isNull("anioPublicacion") || json.getString("anioPublicacion").isEmpty() ? null : java.sql.Date.valueOf(json.getString("anioPublicacion")));
-        libro.setPrecio(new BigDecimal(json.getString("precio")));
-
-        dao.create(libro);
-
-        response.setContentType("application/json;charset=UTF-8");
-        JsonObject resp = Json.createObjectBuilder()
-                .add("message", "Libro creado correctamente")
-                .build();
-        response.getWriter().print(resp.toString());
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        request.setCharacterEncoding("UTF-8");
-        JsonObject json = Json.createReader(request.getReader()).readObject();
-
-        Libros libro = dao.findLibros(json.getInt("idLibro"));
-        if (libro != null) {
-            libro.setTitulo(json.getString("titulo"));
-            libro.setIsbn(json.getString("isbn", ""));
-            libro.setAnioPublicacion(json.isNull("anioPublicacion") || json.getString("anioPublicacion").isEmpty() ? null : java.sql.Date.valueOf(json.getString("anioPublicacion")));
-            libro.setPrecio(new BigDecimal(json.getString("precio")));
-            try {
-                dao.edit(libro);
-                response.setContentType("application/json;charset=UTF-8");
-                JsonObject resp = Json.createObjectBuilder()
-                        .add("message", "Libro actualizado correctamente")
-                        .build();
-                response.getWriter().print(resp.toString());
-            } catch (Exception e) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Error al actualizar libro");
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        try (JsonWriter writer = Json.createWriter(res.getWriter())) {
+            JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+            for (Libros libro : dao.findLibrosEntities()) {
+                arrayBuilder.add(Json.createObjectBuilder()
+                        .add("idLibro", libro.getIdLibro())
+                        .add("titulo", libro.getTitulo())
+                        .add("isbn", libro.getIsbn() == null ? "" : libro.getIsbn())
+                        .add("anioPublicacion", libro.getAnioPublicacion() == null ? ""
+                                : new SimpleDateFormat("yyyy-MM-dd").format(libro.getAnioPublicacion()))
+                        .add("precio", libro.getPrecio().toString())
+                );
             }
-        } else {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Libro no encontrado");
+            writer.writeArray(arrayBuilder.build());
         }
     }
 
     @Override
-    protected void doDelete(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        request.setCharacterEncoding("UTF-8");
-        JsonObject json = Json.createReader(request.getReader()).readObject();
-        int idLibro = json.getInt("idLibro");
-        try {
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        try (JsonReader reader = Json.createReader(req.getInputStream())) {
+            JsonObject json = reader.readObject();
+
+            Libros libro = new Libros();
+            libro.setTitulo(json.getString("titulo", ""));
+            libro.setIsbn(json.getString("isbn", ""));
+            libro.setPrecio(new BigDecimal(json.getString("precio", "0")));
+
+            if (json.containsKey("anioPublicacion") && !json.getString("anioPublicacion").isEmpty()) {
+                libro.setAnioPublicacion(new SimpleDateFormat("yyyy-MM-dd").parse(json.getString("anioPublicacion")));
+            }
+
+            dao.create(libro);
+
+            res.getWriter().write(Json.createObjectBuilder()
+                    .add("status", "created")
+                    .build().toString());
+        } catch (Exception e) {
+            res.setStatus(500);
+            res.getWriter().write(Json.createObjectBuilder().add("error", e.getMessage()).build().toString());
+        }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        try (JsonReader reader = Json.createReader(req.getInputStream())) {
+            JsonObject json = reader.readObject();
+
+            Libros libro = dao.findLibros(json.getInt("idLibro"));
+            if (libro != null) {
+                libro.setTitulo(json.getString("titulo", ""));
+                libro.setIsbn(json.getString("isbn", ""));
+                libro.setPrecio(new BigDecimal(json.getString("precio", "0")));
+
+                String fechaStr = json.getString("anioPublicacion", "").trim();
+                if (!fechaStr.isEmpty()) {
+                    try {
+                        libro.setAnioPublicacion(new SimpleDateFormat("yyyy-MM-dd").parse(fechaStr));
+                    } catch (Exception ex) {
+                        res.setStatus(400);
+                        res.getWriter().write(Json.createObjectBuilder()
+                                .add("error", "Formato de fecha inválido. Use yyyy-MM-dd.")
+                                .build().toString());
+                        return;
+                    }
+                } else {
+                    libro.setAnioPublicacion(null); // Si viene vacío, lo borra
+                }
+
+                dao.edit(libro);
+
+                res.getWriter().write(Json.createObjectBuilder()
+                        .add("status", "updated")
+                        .build().toString());
+            } else {
+                res.setStatus(404);
+                res.getWriter().write(Json.createObjectBuilder().add("error", "Libro no encontrado").build().toString());
+            }
+        } catch (Exception e) {
+            res.setStatus(500);
+            res.getWriter().write(Json.createObjectBuilder().add("error", e.getMessage()).build().toString());
+        }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.setContentType("application/json;charset=UTF-8");
+        try (JsonReader reader = Json.createReader(req.getInputStream())) {
+            JsonObject json = reader.readObject();
+            int idLibro = json.getInt("idLibro");
+
             dao.destroy(idLibro);
-            response.setContentType("application/json;charset=UTF-8");
-            JsonObject resp = Json.createObjectBuilder()
-                    .add("message", "Libro eliminado correctamente")
-                    .build();
-            response.getWriter().print(resp.toString());
-        } catch (NonexistentEntityException e) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Libro no encontrado");
+
+            res.getWriter().write(Json.createObjectBuilder()
+                    .add("status", "deleted")
+                    .build().toString());
+        } catch (Exception e) {
+            res.setStatus(500);
+            res.getWriter().write(Json.createObjectBuilder().add("error", e.getMessage()).build().toString());
         }
     }
 }

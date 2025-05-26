@@ -11,15 +11,15 @@ import javax.persistence.Query;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import dto.Libros;
 import dto.Ventas;
+import dto.Libros;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
 /**
  *
- * @author NITRO
+ * @author FERNANDO
  */
 public class DetalleVentaJpaController implements Serializable {
 
@@ -37,24 +37,24 @@ public class DetalleVentaJpaController implements Serializable {
         try {
             em = getEntityManager();
             em.getTransaction().begin();
-            Libros idLibro = detalleVenta.getIdLibro();
-            if (idLibro != null) {
-                idLibro = em.getReference(idLibro.getClass(), idLibro.getIdLibro());
-                detalleVenta.setIdLibro(idLibro);
-            }
             Ventas idVenta = detalleVenta.getIdVenta();
             if (idVenta != null) {
                 idVenta = em.getReference(idVenta.getClass(), idVenta.getIdVenta());
                 detalleVenta.setIdVenta(idVenta);
             }
-            em.persist(detalleVenta);
+            Libros idLibro = detalleVenta.getIdLibro();
             if (idLibro != null) {
-                idLibro.getDetalleVentaCollection().add(detalleVenta);
-                idLibro = em.merge(idLibro);
+                idLibro = em.getReference(idLibro.getClass(), idLibro.getIdLibro());
+                detalleVenta.setIdLibro(idLibro);
             }
+            em.persist(detalleVenta);
             if (idVenta != null) {
                 idVenta.getDetalleVentaCollection().add(detalleVenta);
                 idVenta = em.merge(idVenta);
+            }
+            if (idLibro != null) {
+                idLibro.getDetalleVentaCollection().add(detalleVenta);
+                idLibro = em.merge(idLibro);
             }
             em.getTransaction().commit();
         } finally {
@@ -70,27 +70,19 @@ public class DetalleVentaJpaController implements Serializable {
             em = getEntityManager();
             em.getTransaction().begin();
             DetalleVenta persistentDetalleVenta = em.find(DetalleVenta.class, detalleVenta.getIdDetalle());
-            Libros idLibroOld = persistentDetalleVenta.getIdLibro();
-            Libros idLibroNew = detalleVenta.getIdLibro();
             Ventas idVentaOld = persistentDetalleVenta.getIdVenta();
             Ventas idVentaNew = detalleVenta.getIdVenta();
-            if (idLibroNew != null) {
-                idLibroNew = em.getReference(idLibroNew.getClass(), idLibroNew.getIdLibro());
-                detalleVenta.setIdLibro(idLibroNew);
-            }
+            Libros idLibroOld = persistentDetalleVenta.getIdLibro();
+            Libros idLibroNew = detalleVenta.getIdLibro();
             if (idVentaNew != null) {
                 idVentaNew = em.getReference(idVentaNew.getClass(), idVentaNew.getIdVenta());
                 detalleVenta.setIdVenta(idVentaNew);
             }
+            if (idLibroNew != null) {
+                idLibroNew = em.getReference(idLibroNew.getClass(), idLibroNew.getIdLibro());
+                detalleVenta.setIdLibro(idLibroNew);
+            }
             detalleVenta = em.merge(detalleVenta);
-            if (idLibroOld != null && !idLibroOld.equals(idLibroNew)) {
-                idLibroOld.getDetalleVentaCollection().remove(detalleVenta);
-                idLibroOld = em.merge(idLibroOld);
-            }
-            if (idLibroNew != null && !idLibroNew.equals(idLibroOld)) {
-                idLibroNew.getDetalleVentaCollection().add(detalleVenta);
-                idLibroNew = em.merge(idLibroNew);
-            }
             if (idVentaOld != null && !idVentaOld.equals(idVentaNew)) {
                 idVentaOld.getDetalleVentaCollection().remove(detalleVenta);
                 idVentaOld = em.merge(idVentaOld);
@@ -98,6 +90,14 @@ public class DetalleVentaJpaController implements Serializable {
             if (idVentaNew != null && !idVentaNew.equals(idVentaOld)) {
                 idVentaNew.getDetalleVentaCollection().add(detalleVenta);
                 idVentaNew = em.merge(idVentaNew);
+            }
+            if (idLibroOld != null && !idLibroOld.equals(idLibroNew)) {
+                idLibroOld.getDetalleVentaCollection().remove(detalleVenta);
+                idLibroOld = em.merge(idLibroOld);
+            }
+            if (idLibroNew != null && !idLibroNew.equals(idLibroOld)) {
+                idLibroNew.getDetalleVentaCollection().add(detalleVenta);
+                idLibroNew = em.merge(idLibroNew);
             }
             em.getTransaction().commit();
         } catch (Exception ex) {
@@ -128,15 +128,15 @@ public class DetalleVentaJpaController implements Serializable {
             } catch (EntityNotFoundException enfe) {
                 throw new NonexistentEntityException("The detalleVenta with id " + id + " no longer exists.", enfe);
             }
-            Libros idLibro = detalleVenta.getIdLibro();
-            if (idLibro != null) {
-                idLibro.getDetalleVentaCollection().remove(detalleVenta);
-                idLibro = em.merge(idLibro);
-            }
             Ventas idVenta = detalleVenta.getIdVenta();
             if (idVenta != null) {
                 idVenta.getDetalleVentaCollection().remove(detalleVenta);
                 idVenta = em.merge(idVenta);
+            }
+            Libros idLibro = detalleVenta.getIdLibro();
+            if (idLibro != null) {
+                idLibro.getDetalleVentaCollection().remove(detalleVenta);
+                idLibro = em.merge(idLibro);
             }
             em.remove(detalleVenta);
             em.getTransaction().commit();

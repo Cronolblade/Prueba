@@ -24,13 +24,16 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
  *
- * @author NITRO
+ * @author FERNANDO
  */
 @Entity
 @Table(name = "libros")
+@XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "Libros.findAll", query = "SELECT l FROM Libros l"),
     @NamedQuery(name = "Libros.findByIdLibro", query = "SELECT l FROM Libros l WHERE l.idLibro = :idLibro"),
@@ -54,6 +57,8 @@ public class Libros implements Serializable {
     @Size(max = 20)
     @Column(name = "isbn")
     private String isbn;
+    @Basic(optional = false)
+    @NotNull
     @Column(name = "anio_publicacion")
     @Temporal(TemporalType.DATE)
     private Date anioPublicacion;
@@ -78,9 +83,10 @@ public class Libros implements Serializable {
         this.idLibro = idLibro;
     }
 
-    public Libros(Integer idLibro, String titulo, BigDecimal precio) {
+    public Libros(Integer idLibro, String titulo, Date anioPublicacion, BigDecimal precio) {
         this.idLibro = idLibro;
         this.titulo = titulo;
+        this.anioPublicacion = anioPublicacion;
         this.precio = precio;
     }
 
@@ -140,6 +146,7 @@ public class Libros implements Serializable {
         this.idCategoria = idCategoria;
     }
 
+    @XmlTransient
     public Collection<DetalleVenta> getDetalleVentaCollection() {
         return detalleVentaCollection;
     }

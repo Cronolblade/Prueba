@@ -21,13 +21,16 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
  *
- * @author NITRO
+ * @author FERNANDO
  */
 @Entity
 @Table(name = "autores")
+@XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "Autores.findAll", query = "SELECT a FROM Autores a"),
     @NamedQuery(name = "Autores.findByIdAutor", query = "SELECT a FROM Autores a WHERE a.idAutor = :idAutor"),
@@ -115,6 +118,7 @@ public class Autores implements Serializable {
         this.fechaNacimiento = fechaNacimiento;
     }
 
+    @XmlTransient
     public Collection<Libros> getLibrosCollection() {
         return librosCollection;
     }

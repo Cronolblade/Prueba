@@ -18,13 +18,15 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
- * @author NITRO
+ * @author FERNANDO
  */
 @Entity
 @Table(name = "detalle_venta")
+@XmlRootElement
 @NamedQueries({
     @NamedQuery(name = "DetalleVenta.findAll", query = "SELECT d FROM DetalleVenta d"),
     @NamedQuery(name = "DetalleVenta.findByIdDetalle", query = "SELECT d FROM DetalleVenta d WHERE d.idDetalle = :idDetalle"),
@@ -47,12 +49,12 @@ public class DetalleVenta implements Serializable {
     @NotNull
     @Column(name = "precio_unitario")
     private BigDecimal precioUnitario;
-    @JoinColumn(name = "id_libro", referencedColumnName = "id_libro")
-    @ManyToOne
-    private Libros idLibro;
     @JoinColumn(name = "id_venta", referencedColumnName = "id_venta")
     @ManyToOne
     private Ventas idVenta;
+    @JoinColumn(name = "id_libro", referencedColumnName = "id_libro")
+    @ManyToOne
+    private Libros idLibro;
 
     public DetalleVenta() {
     }
@@ -91,20 +93,20 @@ public class DetalleVenta implements Serializable {
         this.precioUnitario = precioUnitario;
     }
 
-    public Libros getIdLibro() {
-        return idLibro;
-    }
-
-    public void setIdLibro(Libros idLibro) {
-        this.idLibro = idLibro;
-    }
-
     public Ventas getIdVenta() {
         return idVenta;
     }
 
     public void setIdVenta(Ventas idVenta) {
         this.idVenta = idVenta;
+    }
+
+    public Libros getIdLibro() {
+        return idLibro;
+    }
+
+    public void setIdLibro(Libros idLibro) {
+        this.idLibro = idLibro;
     }
 
     @Override
