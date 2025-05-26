@@ -18,6 +18,8 @@
             <div class="mb-3">
                 <label for="idCliente" class="form-label">ID Cliente</label>
                 <input type="number" class="form-control" id="idCliente">
+                <input type="date" class="form-control" id="fechaVenta" required>
+
             </div>
             <button type="submit" class="btn btn-primary" id="submitBtn">Guardar</button>
         </form>
@@ -54,17 +56,17 @@
                             tbody.innerHTML = '';
                             data.forEach(v => {
                                 const row = `
-                            <tr>
-                                <td>${v.idVenta}</td>
-                                <td>${v.fechaVenta}</td>
-                                <td>${v.total}</td>
-                                <td>${v.idCliente}</td>
-                                <td>
-                                    <button class="btn btn-sm btn-warning" onclick='editarVenta(${JSON.stringify(v)})'>Editar</button>
-                                    <button class="btn btn-sm btn-danger" onclick="eliminarVenta(${v.idVenta})">Eliminar</button>
-                                </td>
-                            </tr>
-                        `;
+                               <tr>
+                                   <td>${v.idVenta}</td>
+                                   <td>${v.fechaVenta}</td>
+                                   <td>${v.total}</td>
+                                   <td>${v.idCliente}</td>
+                                   <td>
+                                       <button class="btn btn-sm btn-warning" onclick='editarVenta(${JSON.stringify(v)})'>Editar</button>
+                                       <button class="btn btn-sm btn-danger" onclick="eliminarVenta(${v.idVenta})">Eliminar</button>
+                                   </td>
+                               </tr>
+                           `;
                                 tbody.innerHTML += row;
                             });
                         });
@@ -115,12 +117,20 @@
                 document.getElementById('idVenta').value = venta.idVenta;
                 document.getElementById('total').value = venta.total;
                 document.getElementById('idCliente').value = venta.idCliente;
+
+                // Convertir fecha "dd/MM/yyyy" a "yyyy-MM-dd"
+                const partes = venta.fechaVenta.split('/');
+                if (partes.length === 3) {
+                    const fechaISO = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                    document.getElementById('fechaVenta').value = fechaISO;
+                }
             }
 
             function obtenerDatosFormulario() {
                 return {
                     total: document.getElementById('total').value,
-                    idCliente: parseInt(document.getElementById('idCliente').value)
+                    idCliente: parseInt(document.getElementById('idCliente').value),
+                    fechaVenta: document.getElementById('fechaVenta').value // yyyy-MM-dd
                 };
             }
 
@@ -128,7 +138,7 @@
                 document.getElementById('ventaForm').reset();
                 document.getElementById('idVenta').value = '';
             }
-
         </script>
+
     </body>
 </html>

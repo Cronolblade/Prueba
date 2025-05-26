@@ -12,6 +12,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.*;
 import java.math.BigDecimal;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +39,8 @@ public class VentasServlet extends HttpServlet {
             for (Ventas venta : ventasList) {
                 arrayBuilder.add(Json.createObjectBuilder()
                         .add("idVenta", venta.getIdVenta())
-                        .add("fechaVenta", venta.getFechaVenta() != null ? venta.getFechaVenta().toString() : "")
+                        .add("fechaVenta", venta.getFechaVenta() != null
+                                ? new SimpleDateFormat("dd/MM/yyyy").format(venta.getFechaVenta()) : "")
                         .add("total", venta.getTotal().toString())
                         .add("idCliente", venta.getIdCliente() != null ? venta.getIdCliente().getIdCliente() : 0)
                 );
@@ -53,7 +55,17 @@ public class VentasServlet extends HttpServlet {
         JsonObject json = Json.createReader(request.getInputStream()).readObject();
 
         Ventas venta = new Ventas();
-        venta.setFechaVenta(new Date());
+
+        // Parsear fecha desde yyyy-MM-dd
+        try {
+            String fechaStr = json.getString("fechaVenta");
+            SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd");
+            venta.setFechaVenta(formato.parse(fechaStr));
+        } catch (ParseException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Formato de fecha incorrecto");
+            return;
+        }
+
         venta.setTotal(new BigDecimal(json.getString("total")));
         if (json.containsKey("idCliente")) {
             Clientes cliente = new Clientes();
@@ -75,6 +87,15 @@ public class VentasServlet extends HttpServlet {
         Ventas venta = ventasDao.findVentas(json.getInt("idVenta"));
         if (venta == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        try {
+            String fechaStr = json.getString("fechaVenta");
+            SimpleDateFormat formato = new SimpleDateFormat("yyyy-MM-dd");
+            venta.setFechaVenta(formato.parse(fechaStr));
+        } catch (ParseException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Formato de fecha incorrecto");
             return;
         }
 
