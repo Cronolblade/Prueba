@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Gestión de Ventas</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body class="container py-4">
+
+        <h1 class="mb-4">Gestión de Ventas</h1>
+
+        <form id="ventaForm" class="mb-4">
+            <input type="hidden" id="idVenta">
+            <div class="mb-3">
+                <label for="total" class="form-label">Total</label>
+                <input type="number" step="0.01" class="form-control" id="total" required>
+            </div>
+            <div class="mb-3">
+                <label for="idCliente" class="form-label">ID Cliente</label>
+                <input type="number" class="form-control" id="idCliente">
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">Guardar</button>
+        </form>
+
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Cliente</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="ventasTableBody"></tbody>
+        </table>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                cargarVentas();
+
+                document.getElementById('ventaForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const id = document.getElementById('idVenta').value;
+                    id ? actualizarVenta(id) : crearVenta();
+                });
+            });
+
+            function cargarVentas() {
+                fetch('ventas')
+                        .then(res => res.json())
+                        .then(data => {
+                            const tbody = document.getElementById('ventasTableBody');
+                            tbody.innerHTML = '';
+                            data.forEach(v => {
+                                const row = `
+                            <tr>
+                                <td>${v.idVenta}</td>
+                                <td>${v.fechaVenta}</td>
+                                <td>${v.total}</td>
+                                <td>${v.idCliente}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick='editarVenta(${JSON.stringify(v)})'>Editar</button>
+                                    <button class="btn btn-sm btn-danger" onclick="eliminarVenta(${v.idVenta})">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                                tbody.innerHTML += row;
+                            });
+                        });
+            }
+
+            function crearVenta() {
+                const venta = obtenerDatosFormulario();
+                fetch('ventas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(venta)
+                }).then(res => {
+                    if (res.ok) {
+                        resetFormulario();
+                        cargarVentas();
+                    }
+                });
+            }
+
+            function actualizarVenta(id) {
+                const venta = obtenerDatosFormulario();
+                venta.idVenta = parseInt(id);
+                fetch('ventas', {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(venta)
+                }).then(res => {
+                    if (res.ok) {
+                        resetFormulario();
+                        cargarVentas();
+                    }
+                });
+            }
+
+            function eliminarVenta(idVenta) {
+                fetch('ventas', {
+                    method: 'DELETE',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({idVenta})
+                }).then(res => {
+                    if (res.ok) {
+                        cargarVentas();
+                    }
+                });
+            }
+
+            function editarVenta(venta) {
+                document.getElementById('idVenta').value = venta.idVenta;
+                document.getElementById('total').value = venta.total;
+                document.getElementById('idCliente').value = venta.idCliente;
+            }
+
+            function obtenerDatosFormulario() {
+                return {
+                    total: document.getElementById('total').value,
+                    idCliente: parseInt(document.getElementById('idCliente').value)
+                };
+            }
+
+            function resetFormulario() {
+                document.getElementById('ventaForm').reset();
+                document.getElementById('idVenta').value = '';
+            }
+
+        </script>
+    </body>
+</html>
